@@ -143,6 +143,18 @@ Authorization: Bearer <seu_token>
 
 ---
 
+```mermaid
+flowchart TD
+    A[Usuário inicia o projeto<br/>com docker-compose] --> B[Serviço: db<br/>PostgreSQL]
+    B --> C[Serviço: migrate<br/>Prisma Migrate]
+    C --> D[Serviço: app<br/>Express API]
+    D --> E[API disponível na porta 3000]
+
+    A --> F[Serviço: test<br/>npm test]
+    F --> B
+```
+---
+
 ## 👨‍💻 Autor
 
 Desenvolvido por [Antonio Herbert](https://github.com/AntoniHerbert)  
