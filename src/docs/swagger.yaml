@@ -1,0 +1,734 @@
+openapi: 3.0.0
+info:
+  title: Document Manager API
+  description: API RESTful para gerenciamento de usuários, datasets, registros e consultas
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Autenticação
+    description: Endpoints de registro e login
+  - name: Usuário
+    description: Informações do usuário autenticado
+  - name: Datasets
+    description: Gerenciamento de datasets
+  - name: Registros
+    description: Registros vinculados a datasets
+  - name: Consultas
+    description: Consultas feitas pelo usuário
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar novo usuário
+      description: Registra um novo usuário com nome, email e senha, aplicando validações nos campos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Apolo Hugo
+                  description: Nome do usuário (mínimo 2 caracteres, sem números ou caracteres especiais)
+                email:
+                  type: string
+                  format: email
+                  example: apolohuhu@meumail.com
+                  description: Email válido e único
+                password:
+                  type: string
+                  example: StrongPassw0rd!
+                  description: >
+                    Senha deve ter no mínimo 8 caracteres, pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuário registrado com sucesso
+                  user:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: Apolo Hugo
+                      email:
+                        type: string
+                        example: apolohuhu@meumail.com
+        '400':
+          description: Erros de validação ou email já registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: string
+                          example: Email já registrado
+                        - type: object
+                          properties:
+                            field:
+                              type: string
+                              example: password
+                            message:
+                              type: string
+                              example: A senha deve conter pelo menos uma letra maiúscula
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal server error
+
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login de usuário
+      description: Autentica usuário com email e senha e retorna um token JWT se credenciais estiverem corretas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: apolohuhu@meumail.com
+                  description: Email do usuário
+                password:
+                  type: string
+                  example: StrongPassw0rd!
+                  description: Senha do usuário
+      responses:
+        '200':
+          description: Login bem-sucedido, retorna token JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '400':
+          description: Erros de validação no email ou senha
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: email
+                        error:
+                          type: string
+                          example: O email é obrigatório
+        '401':
+          description: Senha incorreta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: password
+                        error:
+                          type: string
+                          example: Senha incorreta
+        '404':
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: email
+                        error:
+                          type: string
+                          example: Usuário não encontrado
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal server error
+
+  /me:
+    get:
+      tags:
+        - Autenticação
+      summary: Retorna os dados do usuário autenticado
+      description: Retorna id, nome e email do usuário baseado no token JWT enviado na requisição.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados do usuário autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: Apolo Hugo
+                  email:
+                    type: string
+                    example: apolohuhu@meumail.com
+        '404':
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Usuário não encontrado
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro interno do servidor
+
+
+  /datasets/upload:
+    post:
+      tags:
+        - Datasets
+      summary: Upload de arquivos CSV e PDF para um dataset, com ingestão e armazenamento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - datasetName
+                - recordNames
+                - files
+              properties:
+                datasetName:
+                  type: string
+                  description: Nome do dataset que será criado ou usado (único por usuário)
+                  example: Meu dataset de vendas
+                recordNames:
+                  type: array
+                  description: Nomes dados pelo usuário para cada arquivo enviado, em ordem
+                  items:
+                    type: string
+                  example: ["Arquivo 1", "Arquivo 2"]
+                files:
+                  type: array
+                  description: Arquivos CSV ou PDF para upload
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Upload e ingestão concluídos com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Upload e ingestão concluídos
+                  dataset:
+                    $ref: '#/components/schemas/Dataset'
+                    properties:
+                      records:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Record'
+        '400':
+          description: Erros de validação (nomes duplicados, dataset já existe, etc)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: recordName
+                        error:
+                          type: string
+                          example: Record com nome "Arquivo 1" já existe neste dataset.
+                        name:
+                          type: string
+                          example: Arquivo 1
+        '413':
+          description: Arquivo excede o tamanho máximo permitido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Arquivo excede o tamanho máximo permitido
+                  field:
+                    type: string
+                    example: files
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro ao processar upload
+
+  /records/search:
+    get:
+      summary: Busca textual nos records do usuário autenticado
+      description: |
+        Realiza uma busca textual nos dados de todos os records do usuário.
+        Retorna uma lista de ocorrências com detalhes do dataset, record, posição do match, e o texto encontrado.
+      tags:
+        - Registros
+      parameters:
+        - name: query
+          in: query
+          description: Termo a ser pesquisado nos records
+          required: true
+          schema:
+            type: string
+            example: palavra-chave
+      security:
+        - bearerAuth: [] 
+      responses:
+        '200':
+          description: Lista de ocorrências encontradas na busca
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        datasetName:
+                          type: string
+                          example: dataset_exemplo
+                        recordName:
+                          type: string
+                          example: record_exemplo.json
+                        start:
+                          type: integer
+                          description: Posição inicial do match no texto do record
+                          example: 123
+                        end:
+                          type: integer
+                          description: Posição final do match no texto do record
+                          example: 130
+                        query:
+                          type: string
+                          description: Termo pesquisado
+                          example: palavra-chave
+                        match:
+                          type: string
+                          description: Texto exatamente encontrado no match
+                          example: Palavra-chave
+        '400':
+          description: Parâmetro `query` ausente ou inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Query não informada ou inválida
+        '401':
+          description: Não autorizado - token inválido ou ausente
+        '500':
+          description: Erro interno do servidor durante a busca
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro ao processar busca
+
+  /datasets:
+    get:
+      tags:
+        - Datasets
+      summary: Lista todos os datasets do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de datasets com contagem de records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: Meu Dataset
+                    recordCount:
+                      type: integer
+                      example: 5
+        '401':
+          description: Token inválido ou não enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Token inválido ou não enviado
+        '500':
+          description: Erro interno no servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro ao buscar datasets
+
+  /dataset/{id}/records:
+    get:
+      tags:
+        - Datasets
+      summary: Lista registros de um dataset do usuário, com opção verbose para detalhes completos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID do dataset
+          required: true
+          schema:
+            type: integer
+        - name: verbose
+          in: query
+          description: Mostrar dados completos (dataJson) se true, senão campos resumidos
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Lista de registros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Registro A
+                        size:
+                          type: integer
+                          example: 1024
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: '2025-07-21T00:00:00Z'
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Registro A
+                        size:
+                          type: integer
+                          example: 1024
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: '2025-07-21T00:00:00Z'
+                        dataJson:
+                          type: object
+                          example:
+                            Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium.
+        '400':
+          description: ID do dataset inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: ID do dataset inválido
+        '401':
+          description: Token inválido ou não enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Token inválido ou não enviado
+        '404':
+          description: Dataset não encontrado para o usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Dataset não encontrado para este usuário
+        '500':
+          description: Erro interno no servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro ao buscar registros
+
+  /queries:
+    post:
+      summary: Envia uma pergunta para um dataset e retorna a resposta gerada pela IA
+      tags:
+        - Consultas
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - datasetName
+              properties:
+                query:
+                  type: string
+                  example: "Qual é a data da última atualização?"
+                  description: Pergunta a ser respondida com base no conteúdo do dataset
+                datasetName:
+                  type: string
+                  example: "meu-dataset-financeiro"
+                  description: Nome do dataset do usuário a ser usado na resposta
+      responses:
+        '201':
+          description: Consulta processada e salva com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Consulta realizada e salva com sucesso
+                  query:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 42
+                      datasetName:
+                        type: string
+                        example: "meu-dataset-financeiro"
+                      query:
+                        type: string
+                        example: "Qual é a data da última atualização?"
+                      content:
+                        type: string
+                        example: "Resumo dos dados do dataset..."
+                      answer:
+                        type: string
+                        example: "A última atualização foi em 12 de julho de 2025."
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: "2025-07-21T23:59:59Z"
+        '400':
+          description: Requisição malformada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: O campo "query" é obrigatório e deve ser uma string não vazia.
+        '404':
+          description: Dataset não encontrado ou não pertence ao usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Dataset com nome "meu-dataset-financeiro" não encontrado para este usuário.
+        '500':
+          description: Erro interno ao processar consulta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Erro ao processar consulta
+
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Dataset:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Meu dataset
+        userId:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-07-20T00:00:00Z'
+
+    Record:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        datasetId:
+          type: integer
+          example: 1
+        dataJson:
+          type: object
+          example:
+            campo1: valor1
+            campo2: valor2
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-07-20T00:00:00Z'
+
+
+
+    Query:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 1
+        query:
+          type: string
+          example: SELECT * FROM records
+        answer:
+          type: string
+          example: Resultado da consulta
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-07-20T00:00:00Z'
