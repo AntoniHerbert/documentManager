@@ -35,5 +35,16 @@ services:
       - .:/usr/src/app
     command: npm start
 
+  test:
+    build: .
+    depends_on:
+      - db
+      - migrate
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+    command: npm test --verbose
+
 volumes:
   db_data:
