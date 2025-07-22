@@ -57,8 +57,6 @@ JWT_SECRET="sua_chave_secreta"
 HUGGINGFACE_API_KEY="qwerqqweq"
 ```
 
-Você pode usar o `.env.example` como base.
-
 ## 🧠 Integração com Hugging Face
 
 A API aceita perguntas sobre os dados armazenados e retorna respostas geradas por IA com base no conteúdo dos arquivos.
