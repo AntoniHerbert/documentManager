@@ -109,7 +109,7 @@ Após iniciar, acesse:
  ┣ 📁controllers     → Lógica dos endpoints
  ┣ 📁middlewares     → Autenticação e validações
  ┣ 📁routes          → Rotas da API
- ┣ 📁docs        → documentação do swagger
+ ┣ 📁docs            → documentação do swagger
  ┣ 📁prisma          → Esquema do banco e migrações
  ┣ 📄docker-compose.yml
  ┣ 📄Dockerfile
