@@ -9,8 +9,6 @@ COPY . .
 
 RUN npx prisma generate
 
-RUN npx prisma migrate dev --name init --skip-seed --preview-feature
-
 EXPOSE 3000
 
 CMD ["npm", "start"]

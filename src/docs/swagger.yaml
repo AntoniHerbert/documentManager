@@ -10,8 +10,6 @@ servers:
 tags:
   - name: Autenticação
     description: Endpoints de registro e login
-  - name: Usuário
-    description: Informações do usuário autenticado
   - name: Datasets
     description: Gerenciamento de datasets
   - name: Registros
