@@ -4,7 +4,6 @@
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-green?logo=node.js)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?logo=postgresql)
 ![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?logo=prisma)
-![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 
 Sistema de gerenciamento de documentos com upload, metadados, organização por datasets e consultas inteligentes por IA.  
 Desenvolvido com **Node.js**, **Express**, **Prisma**, **PostgreSQL**, e **Docker**.
